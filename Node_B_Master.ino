@@ -1,6 +1,6 @@
 #include <Wire.h>
 
-// Struct MUST exactly match Node A
+// Yeh struct Node A ke struct se EXACTLY match hona chahiye
 struct SensorData {
   float gasPPM;
   float tempC;
@@ -9,22 +9,30 @@ struct SensorData {
 
 void setup() {
   Serial.begin(9600);
-  Wire.begin(); // Master needs no address
+  Wire.begin(); // Master ko address ki zaroorat nahi hoti
   Serial.println("Node B Master Initialized. Requesting I2C data...");
 }
 
 void loop() {
-  // Request exact payload size from Slave (address 8)
+  // Slave (address 8) se exact struct size ka data mango
   Wire.requestFrom(8, sizeof(payload));
 
-  // Check if full struct was received
+  // Safety Check: Verify karo ki poora data packet receive hua hai ya nahi
   if (Wire.available() == sizeof(payload)) {
     Wire.readBytes((byte*)&payload, sizeof(payload));
 
-    // Print to Node B Serial Monitor to prove I2C works
+    // Serial Monitor par test print
     Serial.print("RECEIVED -> Temp: "); Serial.print(payload.tempC);
-    Serial.print(" | Gas: "); Serial.print(payload.gasPPM);
-    Serial.print(" | LDR2: "); Serial.println(payload.lux);
+    Serial.print(" C | Gas: "); Serial.print(payload.gasPPM);
+    Serial.print(" | Lux: "); Serial.println(payload.lux);
+    
+    // YAHAN TUMHARA WEEK 3 KA LCD LOGIC AAYEGA
+    // if (payload.gasPPM > threshold) { ... }
+    
   }
-  delay(1000); 
+  else {
+    Serial.println("Error: Incomplete I2C payload received or Node A offline.");
+  }
+
+  delay(1000); // 1 second ka polling interval
 }

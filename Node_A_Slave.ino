@@ -1,14 +1,11 @@
 #include <Wire.h>
 
+// Exact hardware mapping
 #define TEMP_PIN A0
 #define GAS_PIN A1
-#define LDR1_PIN A2
-#define LDR2_PIN A3 // Tumhara dusra photoresistor
+#define LDR_PIN A2
 
-unsigned long lastScanTime = 0;
-const unsigned long scanInterval = 500;
-
-// Struct ab 4 values hold karega
+// Optimized struct with only required fields
 struct SensorData {
   float gasPPM;
   float tempC;
@@ -17,29 +14,36 @@ struct SensorData {
 
 void setup() {
   Serial.begin(9600);
-  Wire.begin(8); // Node A address is 8
-  Wire.onRequest(requestEvent); 
+  Wire.begin(8); // Node A configured as Slave with address 8
+  Wire.onRequest(requestEvent); // Interrupt for Master's request
+  
+  Serial.println("Node A Slave Initialized. Acquiring real-time data...");
 }
 
 void loop() {
-  unsigned long currentMillis = millis();
-  if (currentMillis - lastScanTime >= scanInterval) {
-    lastScanTime = currentMillis;
+  // 1. Raw ADC Data Acquisition (0 - 1023)
+  float rawGas = analogRead(GAS_PIN);
+  float rawLux = analogRead(LDR_PIN);
+  int rawTemp = analogRead(TEMP_PIN);
 
-    // Read and convert all 4 sensors
-    int rawTemp = analogRead(TEMP_PIN);
-    payload.tempC = (rawTemp * (5.0 / 1023.0) - 0.5) * 100.0;
-    
-    payload.gasPPM = analogRead(GAS_PIN);
-    payload.lux2 = analogRead(LDR_PIN);
+  // 2. Temperature Conversion for TMP36
+  float voltage = rawTemp * (5.0 / 1023.0);
+  float tempCelsius = (voltage - 0.5) * 100.0;
 
-    // Print to Node A Serial Monitor
-    Serial.print("Temp: "); Serial.print(payload.tempC);
-    Serial.print(" | Gas: "); Serial.print(payload.gasPPM);
-    Serial.print(" | LDR: "); Serial.println(payload.lux);
-  }
+  // 3. Update I2C Payload
+  payload.gasPPM = rawGas;
+  payload.lux = rawLux;
+  payload.tempC = tempCelsius;
+
+  // 4. Local Debugging Output
+  Serial.print("Temp (C): "); Serial.print(payload.tempC);
+  Serial.print(" | Raw Gas: "); Serial.print(payload.gasPPM);
+  Serial.print(" | Raw Lux: "); Serial.println(payload.lux);
+
+  delay(500); // Short delay for loop stability
 }
 
+// Function that runs whenever Node B (Master) requests data
 void requestEvent() {
-  Wire.write((byte*)&payload, sizeof(payload)); 
+  Wire.write((byte*)&payload, sizeof(payload));
 }
