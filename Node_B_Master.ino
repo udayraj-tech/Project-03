@@ -29,7 +29,8 @@ void loop() {
     // YAHAN TUMHARA WEEK 3 KA LCD LOGIC AAYEGA
     // if (payload.gasPPM > threshold) { ... }
     
-  } else {
+  }
+  else {
     Serial.println("Error: Incomplete I2C payload received or Node A offline.");
   }
 
